@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Timeline - Life Events</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #7777c1, #285379, #6185e9);
+            color: #462c74;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            opacity: 0;
+            transform: translateY(-30px);
+            animation: fadeInDown 1s ease-out forwards;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, lch(70.38% 33.16 135.57), #79eaf7, #b07777);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #282aab;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #06aa5d, #2d767e);
+            color: #0f0f23;
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 255, 135, 0.3);
+        }
+
+        .timeline-container {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #00ff87, #60efff, #ff6b6b);
+            transform: translateX(-50%);
+            opacity: 0;
+            animation: timelineGrow 2s ease-out 0.5s forwards;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 60px 0;
+            opacity: 0;
+            transform: translateX(-100px);
+        }
+
+        .timeline-item.right {
+            text-align: right;
+            padding-right: 60px;
+        }
+
+        .timeline-item.right {
+            text-align: left;
+            padding-left: 60px;
+            transform: translateX(100px);
+        }
+
+        .timeline-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            max-width: 400px;
+        }
+
+         .timeline-item.right .timeline-content {
+            margin-left: auto;
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(73, 168, 63, 0.2);
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+        }
+
+        .timeline-item.left .timeline-content::before {
+            right: -30px;
+            border-left-color: rgba(255, 255, 255, 0.05);
+            transform: translateY(-50%);
+        }
+
+        .timeline-item.right .timeline-content::before {
+            left: -30px;
+            border-right-color: rgba(255, 255, 255, 0.05);
+            transform: translateY(-50%);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #00ff87, #60efff);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            border: 4px solid #0f0f23;
+            z-index: 2;
+            opacity: 0;
+            scale: 0;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item.active .timeline-dot {
+            opacity: 1;
+            scale: 1;
+            box-shadow: 0 0 20px rgba(0, 255, 135, 0.6);
+        }
+
+        .event-date {
+            color: #00ff87;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .event-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .event-description {
+            color: #a0a0a0;
+            line-height: 1.6;
+        }
+
+        .event-category {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #11114b;
+        }
+
+        .timeline-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @keyframes fadeInDown {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes timelineGrow {
+            from {
+                opacity: 0;
+                height: 0;
+            }
+            to {
+                opacity: 1;
+                height: 100%;
+            }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #00ff87;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .timeline-line {
+                left: 30px;
+            }
+            
+            .timeline-item {
+                text-align: left;
+                padding-left: 70px;
+                padding-right: 20px;
+            }
+            
+            .timeline-item.left,
+            .timeline-item.right {
+                text-align: left;
+                padding-left: 70px;
+                padding-right: 20px;
+                transform: translateX(-100px);
+            }
+            
+            .timeline-content {
+                max-width: none;
+            }
+            
+            .timeline-content::before {
+                left: -30px;
+                border-right-color: rgba(255, 255, 255, 0.05);
+                border-left-color: transparent;
+            }
+            
+            .timeline-dot {
+                left: 30px;
+            }
+            
+            .control-btn {
+                margin: 5px;
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>The Story of My Growth and Achievements</h1>
+            <p>Uncover the moments that have shaped my personal and professional growth.”</p>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="playBtn">▶ Auto Play</button>
+            <button class="control-btn" id="resetBtn"> Reset</button>
+            <button class="control-btn" id="speedBtn"> Speed: Normal</button>
+        </div>
+
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+            
+            <div class="timeline-item left" data-delay="200">
+                <div class="timeline-content" data-details="Growing up in a big town within a warm family gave me the foundations that shaped my values and personality.">
+                    <div class="event-category">Birth</div>
+                    <div class="event-date">June 22, 1988</div>
+                    <div class="event-title">Birth</div>
+                    <div class="event-description">“A new beginning, filled with love and the warmth of family.”.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item right" data-delay="400">
+                <div class="timeline-content" data-details="Elementary school gave me my first real sense of community. I not only learned the fundamentals of academics but also the meaning of friendship and teamwork. That’s where my love for learning truly began.">
+                    <div class="event-category">Education</div>
+                    <div class="event-date">September 2003</div>
+                    <div class="event-title">Started Elementary School</div>
+                    <div class="event-description">“Starting school and finding new joys along the way.”</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item left" data-delay="600">
+                <div class="timeline-content" data-details="The transition to middle school signified a new stage of maturity. Of the many new subjects I encountered, computer science particularly sparked my interest in technology and programming.">
+                    <div class="event-category">Education</div>
+                    <div class="event-date">September 2008</div>
+                    <div class="event-title">Started Middle School</div>
+                    <div class="event-description">“Cultivating independence and exploring new areas of knowledge.”.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item right" data-delay="800">
+                <div class="timeline-content" data-details="High school marked my specialization in sciences, with a focus on mathematics and computer science, alongside extracurricular activities that broadened my preparation for higher education.">
+                    <div class="event-category">Education</div>
+                    <div class="event-date">September 2012</div>
+                    <div class="event-title">High School </div>
+                    <div class="event-description">Pursuing Sciences: Laying the Groundwork for University.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item left" data-delay="1000">
+                <div class="timeline-content" data-details="Science diploma with honors, represented the culmination of my high school years and the opening to higher education.">
+                    <div class="event-category">Achievement</div>
+                    <div class="event-date">June 2014</div>
+                    <div class="event-title">Graduated High School</div>
+                    <div class="event-description">Obtaining my high school diploma </div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item right" data-delay="1200">
+                <div class="timeline-content" data-details="I experienced greater independence and the chance to expand my understanding of computer science. Engaging with dedicated professors and driven students enriched my vision of the technological field.">
+                    <div class="event-category">Education</div>
+                    <div class="event-date">September 2014</div>
+                    <div class="event-title">Computer Science Studies</div>
+                    <div class="event-description">Beginning of higher education in web development and programming.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item left" data-delay="1400">
+                <div class="timeline-content" data-details="My first job was transformative, allowing me to apply theory to practice, work on real projects, and grow through collaboration with an experienced team.">
+                    <div class="event-category">Career</div>
+                    <div class="event-date">July 2018</div>
+                    <div class="event-title">First Job - Junior Developer</div>
+                    <div class="event-description">Began my web development career working with JavaScript and jQuery..</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item right" data-delay="1600">
+                <div class="timeline-content" data-details="recognized my efforts and progression.and collaborating with seasoned colleagues accelerated my growth, both professionally and personally.">
+                    <div class="event-category">Career</div>
+                    <div class="event-date">March 2020</div>
+                    <div class="event-title"> Developer</div>
+                    <div class="event-description">Growing Into Roles of Greater Responsibility and Technical Leadership.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+
+            <div class="timeline-item left" data-delay="1800">
+                <div class="timeline-content" data-details="As a web developer, I constantly embrace new challenges and innovations, driven by a passion for technology and community learning.">
+                    <div class="event-category">Present</div>
+                    <div class="event-date">2025</div>
+                    <div class="event-title">Today</div>
+                    <div class="event-description">I pursue new technologies, embrace challenges, and contribute to the tech community.</div>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for details -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div class="event-category" id="modalCategory"></div>
+            <div class="event-date" id="modalDate"></div>
+            <div class="event-title" id="modalTitle"></div>
+            <div class="event-description" id="modalDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            let autoPlay = false;
+            let speed = 1000; // Normal speed
+            let currentIndex = 0;
+            let timelineItems = $('.timeline-item');
+            
+            // Initial timeline animation
+            function animateTimeline() {
+                timelineItems.each(function(index) {
+                    const item = $(this);
+                    const delay = parseInt(item.data('delay')) || 0;
+                    
+                    setTimeout(() => {
+                        item.addClass('visible active');
+                    }, delay);
+                });
+            }
+
+            // Reset timeline
+            function resetTimeline() {
+                timelineItems.removeClass('visible active');
+                currentIndex = 0;
+            }
+
+            // Auto play
+            function startAutoPlay() {
+                if (currentIndex >= timelineItems.length) {
+                    currentIndex = 0;
+                    resetTimeline();
+                }
+
+                if (autoPlay && currentIndex < timelineItems.length) {
+                    const currentItem = timelineItems.eq(currentIndex);
+                    currentItem.addClass('visible active');
+                    
+                    // Animate the dot
+                    setTimeout(() => {
+                        currentItem.find('.timeline-dot').addClass('active');
+                    }, 200);
+
+                    currentIndex++;
+                    
+                    setTimeout(startAutoPlay, speed);
+                }
+            }
+
+            // Controls
+            $('#playBtn').on('click', function() {
+                autoPlay = !autoPlay;
+                $(this).text(autoPlay ? '⏸ Pause' : '▶ Auto Play');
+                
+                if (autoPlay) {
+                    if (currentIndex >= timelineItems.length) {
+                        resetTimeline();
+                    }
+                    startAutoPlay();
+                }
+            });
+
+            $('#resetBtn').on('click', function() {
+                autoPlay = false;
+                $('#playBtn').text('▶ Auto Play');
+                resetTimeline();
+                setTimeout(animateTimeline, 500);
+            });
+
+            $('#speedBtn').on('click', function() {
+                if (speed === 1000) {
+                    speed = 500;
+                    $(this).text('⚡ Speed: Fast');
+                } else if (speed === 500) {
+                    speed = 2000;
+                    $(this).text('⚡ Speed: Slow');
+                } else {
+                    speed = 1000;
+                    $(this).text('⚡ Speed: Normal');
+                }
+            });
+
+            // Modal for details
+            $('.timeline-content').on('click', function() {
+                const content = $(this);
+                const details = content.data('details');
+                const category = content.find('.event-category').text();
+                const date = content.find('.event-date').text();
+                const title = content.find('.event-title').text();
+
+                $('#modalCategory').text(category);
+                $('#modalDate').text(date);
+                $('#modalTitle').text(title);
+                $('#modalDetails').text(details);
+                $('#detailModal').fadeIn(300);
+            });
+
+            $('#modalClose, #detailModal').on('click', function(e) {
+                if (e.target === this) {
+                    $('#detailModal').fadeOut(300);
+                }
+            });
+
+            // Initialization
+            setTimeout(animateTimeline, 1000);
+
+            // Scroll animation for larger screens
+            $(window).on('scroll', function() {
+                timelineItems.each(function() {
+                    const item = $(this);
+                    const itemTop = item.offset().top;
+                    const windowTop = $(window).scrollTop();
+                    const windowHeight = $(window).height();
+
+                    if (itemTop < windowTop + windowHeight * 0.8) {
+                        item.addClass('visible active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
